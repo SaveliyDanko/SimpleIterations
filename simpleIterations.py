@@ -1,3 +1,5 @@
+import random
+
 def is_diagonally_dominant(A):
     n = len(A)
     for i in range(n):
@@ -10,35 +12,31 @@ def is_diagonally_dominant(A):
 
 def find_diagonally_dominant_order(A, b):
     n = len(A)
-    graph = {r: [] for r in range(n)}
-    for r in range(n):
-        row_sum = sum(abs(A[r][j]) for j in range(n))
-        for pos in range(n):
-            if 2 * abs(A[r][pos]) >= row_sum:
-                graph[r].append(pos)
+    def backtrack(i, used, order):
+        if i == n:
+            return order
+        for r in range(n):
+            if not used[r]:
+                row_sum = sum(abs(A[r][j]) for j in range(n))
+                if 2 * abs(A[r][i]) >= row_sum:
+                    used[r] = True
+                    order.append(r)
+                    result = backtrack(i + 1, used, order)
+                    if result is not None:
+                        return result
+                    order.pop()
+                    used[r] = False
+        return None
 
-    match_pos = [-1] * n
+    used = [False] * n
+    order = backtrack(0, used, [])
+    if order is None:
+        return None, None
 
-    def dfs(row, seen):
-        for pos in graph[row]:
-            if not seen[pos]:
-                seen[pos] = True
-                if match_pos[pos] == -1 or dfs(match_pos[pos], seen):
-                    match_pos[pos] = row
-                    return True
-        return False
-
-    for r in range(n):
-        seen = [False] * n
-        if not dfs(r, seen):
-            return None, None
-
-    new_A = [None] * n
-    new_b = [None] * n
-    for pos in range(n):
-        new_A[pos] = A[match_pos[pos]]
-        new_b[pos] = b[match_pos[pos]]
+    new_A = [A[r] for r in order]
+    new_b = [b[r] for r in order]
     return new_A, new_b
+
 
 
 def matrix_infinity_norm(A):
@@ -68,12 +66,42 @@ def simple_iteration_method(A, b, eps, max_iterations=1000):
     return x_new, iterations, error_vector
 
 
+def generate_random_diagonally_dominant_matrix(n, min_val=-10, max_val=10):
+    A = []
+    for i in range(n):
+        row = []
+        for j in range(n):
+            if i == j:
+                row.append(0.0)
+            else:
+                row.append(random.uniform(min_val, max_val))
+        off_diag_sum = sum(abs(x) for j, x in enumerate(row) if j != i)
+        diag = off_diag_sum + random.uniform(1, 10)
+        row[i] = diag
+        A.append(row)
+    return A
+
+
+def generate_random_vector(n, min_val=-10, max_val=10):
+    return [random.uniform(min_val, max_val) for _ in range(n)]
+
+
+def generate_random_matrix(n, min_val=-10, max_val=10):
+    A = []
+    for i in range(n):
+        row = [random.uniform(min_val, max_val) for _ in range(n)]
+        A.append(row)
+    return A
+
+
 def main():
     print("Решение СЛАУ методом простых итераций.")
     print("Выберите способ ввода данных:")
     print("1 – с клавиатуры")
     print("2 – из файла")
-    choice = input("Ваш выбор (1 или 2): ").strip()
+    print("3 – генерация случайной диагонально преобладающей матрицы")
+    print("4 – генерация случайной матрицы (любая)")
+    choice = input("Ваш выбор (1, 2, 3 или 4): ").strip()
 
     if choice == "1":
         try:
@@ -155,6 +183,53 @@ def main():
         except ValueError:
             print("Ошибка ввода точности eps.")
             return
+
+    elif choice == "3":
+        try:
+            n = int(input("Введите размерность матрицы n (<=20): "))
+        except ValueError:
+            print("Ошибка ввода числа n.")
+            return
+        if n > 20 or n < 1:
+            print("Размерность матрицы должна быть от 1 до 20.")
+            return
+        try:
+            eps = float(input("Введите требуемую точность eps: "))
+        except ValueError:
+            print("Ошибка ввода точности.")
+            return
+
+        A = generate_random_diagonally_dominant_matrix(n)
+        b = generate_random_vector(n)
+        print("\nСгенерированная матрица A (диагонально преобладающая):")
+        for row in A:
+            print("  " + " ".join(f"{elem:.3f}" for elem in row))
+        print("\nСгенерированный вектор b:")
+        print("  " + " ".join(f"{elem:.3f}" for elem in b))
+
+    elif choice == "4":
+        try:
+            n = int(input("Введите размерность матрицы n (<=20): "))
+        except ValueError:
+            print("Ошибка ввода числа n.")
+            return
+        if n > 20 or n < 1:
+            print("Размерность матрицы должна быть от 1 до 20.")
+            return
+        try:
+            eps = float(input("Введите требуемую точность eps: "))
+        except ValueError:
+            print("Ошибка ввода точности.")
+            return
+
+        A = generate_random_matrix(n)
+        b = generate_random_vector(n)
+        print("\nСгенерированная матрица A (произвольная):")
+        for row in A:
+            print("  " + " ".join(f"{elem:.3f}" for elem in row))
+        print("\nСгенерированный вектор b:")
+        print("  " + " ".join(f"{elem:.3f}" for elem in b))
+
     else:
         print("Неверный выбор ввода.")
         return
